@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     #messages { scroll-behavior: smooth; }
+
+    /* Typing dots animation */
     .typing span {
       display:inline-block; width:6px; height:6px; margin:0 2px;
       border-radius:9999px; opacity:.3; animation: blink 1.2s infinite;
@@ -14,14 +16,52 @@
     .typing span:nth-child(2){animation-delay:.2s}
     .typing span:nth-child(3){animation-delay:.4s}
     @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
-    #processing { display: none; text-align: center; margin-bottom: 0.5rem; color: #4f46e5; font-weight: 500; }
+
+    /* Chat bubble animation */
+    .chat-bubble {
+      animation: fadeInUp 0.4s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Input box typing animation */
+    #input {
+      overflow-wrap: break-word;   /* ✅ Prevents horizontal scroll */
+      word-break: break-word;
+      resize: none;
+    }
+
+    /* Send button hover animation */
+    #send {
+      transition: all 0.3s ease;
+    }
+    #send:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Processing fade animation */
+    #processing {
+      display: none;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      color: #4f46e5;
+      font-weight: 500;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
   </style>
 </head>
 <body class="h-full bg-gray-50 text-gray-900">
   <div class="flex flex-col h-screen">
-    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10">
+    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10 shadow-md animate-fade-in">
       <div class="max-w-5xl mx-auto flex items-center gap-3">
-        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white grid place-items-center font-bold">AI</div>
+        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white grid place-items-center font-bold animate-bounce">AI</div>
         <h1 class="text-lg font-semibold">My Chatbot</h1>
       </div>
     </header>
@@ -33,9 +73,9 @@
     <footer class="px-4 pb-4">
       <div class="max-w-3xl mx-auto">
         <div id="processing">Processing your request...</div>
-        <div class="rounded-2xl border bg-white shadow-sm">
+        <div class="rounded-2xl border bg-white shadow-md transition-all duration-300 hover:shadow-lg">
           <div class="p-3">
-            <textarea id="input" rows="1" placeholder="Message..." class="w-full resize-none outline-none max-h-40"></textarea>
+            <textarea id="input" rows="1" placeholder="Message..." class="w-full outline-none max-h-40"></textarea>
           </div>
           <div class="px-3 pb-3 flex justify-end">
             <button id="send" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">Send</button>
@@ -72,7 +112,7 @@
         const div = document.createElement('div');
         div.className = `flex ${isUser ? 'justify-end':''}`;
         div.innerHTML = `
-          <div class="max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm ${isUser
+          <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm ${isUser
             ? 'bg-indigo-600 text-white'
             : 'bg-white border-gray-200'}">
             ${escapeHtml(m.content)}
@@ -123,6 +163,12 @@
       if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
     });
     sendBtn.addEventListener('click', sendMessage);
+
+    // Auto-expand textarea
+    inputEl.addEventListener("input", () => {
+      inputEl.style.height = "auto";
+      inputEl.style.height = inputEl.scrollHeight + "px";
+    });
   </script>
 </body>
 </html>
