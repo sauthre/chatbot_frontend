@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Chatbot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #messages { scroll-behavior: smooth; }
+    .typing span { display:inline-block; width:6px; height:6px; margin:0 2px; border-radius:9999px; opacity:.3; animation: blink 1.2s infinite; }
+    .typing span:nth-child(2){animation-delay:.2s}
+    .typing span:nth-child(3){animation-delay:.4s}
+    @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+    #processing { display: none; text-align: center; margin-bottom: 0.5rem; color: #4f46e5; font-weight: 500; }
+  </style>
+</head>
+<body class="h-full bg-gray-50 text-gray-900">
+  <div class="flex flex-col h-screen">
+    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white grid place-items-center font-bold">AI</div>
+        <h1 class="text-lg font-semibold">My Chatbot</h1>
+      </div>
+    </header>
+
+    <main id="messages" class="flex-1 overflow-y-auto px-4 py-4">
+      <div id="thread" class="max-w-3xl mx-auto space-y-4"></div>
+    </main>
+
+    <footer class="px-4 pb-4">
+      <div class="max-w-3xl mx-auto">
+        <div id="processing">Processing your request<span class="typing"><span></span><span></span><span></span></span></div>
+        <div class="rounded-2xl border bg-white shadow-sm">
+          <div class="p-3">
+            <textarea id="input" rows="1" placeholder="Message..." class="w-full resize-none outline-none max-h-40"></textarea>
+          </div>
+          <div class="px-3 pb-3 flex justify-end">
+            <button id="send" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">Send</button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Updated backend URL
+    const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
+
+    const sessionIdKey = 'chatbot_session_id';
+    let sessionId = localStorage.getItem(sessionIdKey) || crypto.randomUUID();
+    localStorage.setItem(sessionIdKey, sessionId);
+
+    const threadEl = document.getElementById('thread');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const messagesView = document.getElementById('messages');
+    const processingEl = document.getElementById('processing');
+
+    let messages = JSON.parse(localStorage.getItem('chatbot_messages') || '[]');
+
+    function save(){ localStorage.setItem('chatbot_messages', JSON.stringify(messages)); }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+    function render(){
+      threadEl.innerHTML = '';
+      messages.forEach(m=>{
+        const isUser = m.role === 'user';
+        const div = document.createElement('div');
+        div.className = `flex ${isUser ? 'justify-end':''}`;
+        div.innerHTML = `
+          <div class="max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm ${isUser
+            ? 'bg-indigo-600 text-white'
+            : 'bg-white border-gray-200'}">
+            ${escapeHtml(m.content)}
+          </div>`;
+        threadEl.appendChild(div);
+      });
+      messagesView.scrollTop = messagesView.scrollHeight;
+    }
+
+    render();
+
+    async function sendMessage(){
+      const text = inputEl.value.trim();
+      if(!text) return;
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      processingEl.style.display = 'block'; // show processing message
+
+      messages.push({role:'user', content:text});
+      render();
+
+      try{
+        const payload = { message: text, user_id: sessionId };
+        const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const data = await res.json();
+        messages.push({role:'assistant', content: data.reply || 'No response'});
+      }catch(e){
+        messages.push({role:'assistant', content:'Error: '+e.message});
+      }
+
+      processingEl.style.display = 'none'; // hide processing message
+      save();
+      render();
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+
+    inputEl.addEventListener('keydown', e=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+    });
+    sendBtn.addEventListener('click', sendMessage);
+  </script>
+</body>
+</html>
