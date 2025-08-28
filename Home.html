@@ -6,12 +6,12 @@
   <title>Flarefix Chat</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Animated gradient background */
     body {
       background: linear-gradient(270deg, #f5f7fa, #c3cfe2, #f5f7fa);
       background-size: 600% 600%;
       animation: gradientBG 20s ease infinite;
     }
-
     @keyframes gradientBG {
       0%{background-position:0% 50%;}
       50%{background-position:100% 50%;}
@@ -34,18 +34,15 @@
       100%{transform: translateY(0);}
     }
 
-    /* Chat bubble animation */
+    /* Chat bubble fade + slide animation */
     .chat-bubble { animation: fadeSlide 0.3s ease; }
     @keyframes fadeSlide {
       0% { opacity:0; transform: translateY(10px); }
       100% { opacity:1; transform: translateY(0); }
     }
 
-    /* Send button ripple */
-    .ripple {
-      position: relative;
-      overflow: hidden;
-    }
+    /* Send button ripple effect */
+    .ripple { position: relative; overflow: hidden; }
     .ripple span {
       position: absolute;
       border-radius: 50%;
@@ -53,9 +50,7 @@
       animation: rippleEffect 0.6s linear;
       background: rgba(255,255,255,0.5);
     }
-    @keyframes rippleEffect {
-      to { transform: scale(4); opacity:0; }
-    }
+    @keyframes rippleEffect { to { transform: scale(4); opacity:0; } }
 
     /* Processing shimmer */
     #processing {
@@ -72,6 +67,8 @@
       0%{background-position:-100% 0;}
       100%{background-position:100% 0;}
     }
+
+    textarea { resize: none; overflow-y: hidden; }
   </style>
 </head>
 <body class="h-full text-gray-900">
@@ -85,12 +82,12 @@
     </header>
 
     <!-- Chat Messages -->
-    <main id="messages" class="flex-1 overflow-y-auto px-3 py-3 h-[calc(100vh-120px)]">
+    <main id="messages" class="flex-1 overflow-y-auto px-3 py-3">
       <div id="thread" class="max-w-3xl mx-auto space-y-4"></div>
     </main>
 
     <!-- Footer -->
-    <footer class="px-3 pb-3">
+    <footer class="px-3 pb-3 bg-white sticky bottom-0 z-10">
       <div class="max-w-3xl mx-auto">
         <div id="processing" class="typing"><span></span><span></span><span></span></div>
         <div class="rounded-2xl border bg-white shadow-sm flex items-end">
@@ -116,6 +113,7 @@
 
     let messages = [];
 
+    // Simple markdown renderer
     function renderMarkdown(text) {
       return text
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -154,8 +152,8 @@
       // Button ripple effect
       const ripple = document.createElement('span');
       const rect = sendBtn.getBoundingClientRect();
-      ripple.style.left = (event.clientX - rect.left) + 'px';
-      ripple.style.top = (event.clientY - rect.top) + 'px';
+      ripple.style.left = (rect.width/2)+'px';
+      ripple.style.top = (rect.height/2)+'px';
       sendBtn.appendChild(ripple);
       setTimeout(()=>ripple.remove(),600);
 
@@ -165,7 +163,11 @@
 
       try{
         const payload={message:text,user_id:sessionId};
-        const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const res=await fetch(API_URL,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload)
+        });
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         const data=await res.json();
         let reply=data.reply||'No response';
@@ -193,7 +195,8 @@
     });
     sendBtn.addEventListener('click',sendMessage);
 
-    inputEl.addEventListener('input',()=>{
+    // Auto-expand textarea
+    inputEl.addEventListener("input",()=>{
       inputEl.style.height='auto';
       inputEl.style.height=inputEl.scrollHeight+'px';
     });
