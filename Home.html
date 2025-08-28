@@ -8,7 +8,7 @@
   <style>
     #messages { scroll-behavior: smooth; }
 
-    /* Typing dots animation */
+    /* Typing dots */
     .typing span {
       display:inline-block; width:6px; height:6px; margin:0 2px;
       border-radius:9999px; opacity:.3; animation: blink 1.2s infinite;
@@ -19,54 +19,34 @@
 
     /* Chat bubble animation */
     .chat-bubble {
-      animation: fadeInUp 0.4s ease;
+      animation: fadeInUp 0.3s ease;
     }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Input box typing animation */
-    #input {
-      overflow-wrap: break-word;
-      word-break: break-word;
-      resize: none;
+    /* Markdown formatting */
+    .message-content p { margin: 0.25rem 0; }
+    .message-content code { background: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 4px; }
+    .dark .message-content code { background: #374151; color: #f9fafb; }
+    .message-content pre {
+      background: #f3f4f6; padding: 0.5rem; border-radius: 6px; overflow-x: auto;
     }
-
-    /* Send button hover animation */
-    #send {
-      transition: all 0.3s ease;
-    }
-    #send:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    /* Processing fade animation */
-    #processing {
-      display: none;
-      text-align: center;
-      margin-bottom: 0.5rem;
-      color: #374151;
-      font-weight: 500;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
+    .dark .message-content pre { background: #1f2937; color: #f9fafb; }
   </style>
 </head>
-<body class="h-full bg-gray-50 text-gray-900">
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
   <div class="flex flex-col h-screen">
     <!-- HEADER -->
-    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10 shadow-md">
-      <div class="max-w-5xl mx-auto flex items-center gap-3">
-        <!-- Flarefix logo -->
-        <div class="w-9 h-9 rounded-2xl bg-gray-800 text-gray-100 grid place-items-center font-bold animate-bounce">
-          F
-        </div>
-        <h1 class="text-lg font-semibold text-gray-800">Flarefix</h1>
+    <header class="px-4 py-3 border-b bg-white dark:bg-gray-800 sticky top-0 z-10 shadow-md flex justify-between items-center">
+      <div class="max-w-5xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-gray-800 text-gray-100 grid place-items-center font-bold">F</div>
+        <h1 class="text-lg font-semibold">Flarefix</h1>
+      </div>
+      <div class="flex gap-2">
+        <button id="clear" class="px-3 py-1.5 text-sm rounded-lg bg-red-500 hover:bg-red-600 text-white">Clear Chat</button>
+        <button id="toggleTheme" class="px-3 py-1.5 text-sm rounded-lg bg-gray-700 hover:bg-gray-600 text-white">Dark/Light</button>
       </div>
     </header>
 
@@ -78,10 +58,12 @@
     <!-- FOOTER INPUT -->
     <footer class="px-4 pb-4">
       <div class="max-w-3xl mx-auto">
-        <div id="processing">Processing your request...</div>
-        <div class="rounded-2xl border bg-white shadow-md transition-all duration-300 hover:shadow-lg">
+        <div id="processing" class="hidden text-center mb-2 text-gray-600 dark:text-gray-300">
+          <span class="typing"><span></span><span></span><span></span></span>
+        </div>
+        <div class="rounded-2xl border bg-white dark:bg-gray-800 shadow-md transition-all duration-300 hover:shadow-lg">
           <div class="p-3">
-            <textarea id="input" rows="1" placeholder="Message Flarefix..." class="w-full outline-none max-h-40"></textarea>
+            <textarea id="input" rows="1" placeholder="Message Flarefix..." class="w-full outline-none max-h-40 bg-transparent resize-none"></textarea>
           </div>
           <div class="px-3 pb-3 flex justify-end">
             <button id="send" class="px-4 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-900 text-white">Send</button>
@@ -93,85 +75,99 @@
 
   <script>
     const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
-
-    const sessionId = crypto.randomUUID(); // ✅ fresh session every time
+    const sessionId = crypto.randomUUID(); // fresh session each time
 
     const threadEl = document.getElementById('thread');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
     const messagesView = document.getElementById('messages');
     const processingEl = document.getElementById('processing');
+    const clearBtn = document.getElementById('clear');
+    const toggleThemeBtn = document.getElementById('toggleTheme');
 
-    let messages = []; // ✅ start fresh, no localStorage
+    let messages = [];
 
-    function escapeHtml(s){ 
-      return String(s).replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); 
+    // Basic markdown renderer
+    function renderMarkdown(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/```([^`]+)```/gs, "<pre><code>$1</code></pre>")
+        .replace(/\n/g, "<br>");
     }
 
-    function render(){
+    function render() {
       threadEl.innerHTML = '';
-      messages.forEach(m=>{
+      messages.forEach(m => {
         const isUser = m.role === 'user';
         const div = document.createElement('div');
-        div.className = `flex items-end gap-2 ${isUser ? 'justify-end':''}`;
+        div.className = `flex items-start gap-2 ${isUser ? 'justify-end' : ''}`;
 
         if (isUser) {
-          // User message bubble
           div.innerHTML = `
             <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-gray-800 text-white">
-              ${escapeHtml(m.content)}
+              <div class="message-content">${renderMarkdown(m.content)}</div>
             </div>`;
         } else {
-          // Assistant with Flarefix logo
           div.innerHTML = `
             <div class="w-7 h-7 rounded-full bg-gray-700 text-white flex items-center justify-center text-xs font-bold">F</div>
-            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
-              ${escapeHtml(m.content)}
+            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-white dark:bg-gray-700 dark:text-gray-100 border-gray-200">
+              <div class="message-content">${renderMarkdown(m.content)}</div>
             </div>`;
         }
+
         threadEl.appendChild(div);
       });
       messagesView.scrollTop = messagesView.scrollHeight;
     }
 
-    render();
-
-    async function sendMessage(){
+    async function sendMessage() {
       const text = inputEl.value.trim();
-      if(!text) return;
+      if (!text) return;
       inputEl.value = '';
       sendBtn.disabled = true;
-      processingEl.style.display = 'block';
+      processingEl.classList.remove("hidden");
 
-      messages.push({role:'user', content:text});
+      messages.push({ role: 'user', content: text });
       render();
 
-      try{
+      try {
         const payload = { message: text, user_id: sessionId };
         const res = await fetch(API_URL, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
-        if(!res.ok){
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+        // ✅ STREAMING SIMULATION: Instead of waiting, show gradually
         const data = await res.json();
-        messages.push({role:'assistant', content: data.reply || 'No response'});
-      }catch(e){
-        messages.push({role:'assistant', content:'Error: '+e.message});
+        let reply = data.reply || 'No response';
+        let current = "";
+        messages.push({ role: 'assistant', content: "" });
+        render();
+
+        for (let i = 0; i < reply.length; i++) {
+          current += reply[i];
+          messages[messages.length - 1].content = current;
+          render();
+          await new Promise(r => setTimeout(r, 15)); // typing speed
+        }
+      } catch (e) {
+        messages.push({ role: 'assistant', content: 'Error: ' + e.message });
       }
 
-      processingEl.style.display = 'none';
+      processingEl.classList.add("hidden");
       render();
       sendBtn.disabled = false;
       inputEl.focus();
     }
 
-    inputEl.addEventListener('keydown', e=>{
-      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+    // Events
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
     sendBtn.addEventListener('click', sendMessage);
 
@@ -179,6 +175,17 @@
     inputEl.addEventListener("input", () => {
       inputEl.style.height = "auto";
       inputEl.style.height = inputEl.scrollHeight + "px";
+    });
+
+    // Clear chat
+    clearBtn.addEventListener('click', () => {
+      messages = [];
+      render();
+    });
+
+    // Dark/Light mode toggle
+    toggleThemeBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
     });
   </script>
 </body>
