@@ -6,75 +6,19 @@
   <title>Flarefix Chat</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      background: linear-gradient(270deg, #f5f7fa, #c3cfe2, #f5f7fa);
-      background-size: 600% 600%;
-      animation: gradientBG 20s ease infinite;
-    }
-
-    @keyframes gradientBG {
-      0%{background-position:0% 50%;}
-      50%{background-position:100% 50%;}
-      100%{background-position:0% 50%;}
-    }
-
     #messages { scroll-behavior: smooth; }
-
-    /* Typing dots bounce */
     .typing span {
       display:inline-block; width:6px; height:6px; margin:0 2px;
-      border-radius:9999px; background:#4f46e5;
-      animation: bounce 0.6s infinite alternate;
+      border-radius:9999px; opacity:.3; animation: blink 1.2s infinite;
     }
     .typing span:nth-child(2){animation-delay:.2s}
     .typing span:nth-child(3){animation-delay:.4s}
-    @keyframes bounce {
-      0%{transform: translateY(0);}
-      50%{transform: translateY(-6px);}
-      100%{transform: translateY(0);}
-    }
-
-    /* Chat bubble animation */
-    .chat-bubble { animation: fadeSlide 0.3s ease; }
-    @keyframes fadeSlide {
-      0% { opacity:0; transform: translateY(10px); }
-      100% { opacity:1; transform: translateY(0); }
-    }
-
-    /* Send button ripple */
-    .ripple {
-      position: relative;
-      overflow: hidden;
-    }
-    .ripple span {
-      position: absolute;
-      border-radius: 50%;
-      transform: scale(0);
-      animation: rippleEffect 0.6s linear;
-      background: rgba(255,255,255,0.5);
-    }
-    @keyframes rippleEffect {
-      to { transform: scale(4); opacity:0; }
-    }
-
-    /* Processing shimmer */
-    #processing {
-      display: none;
-      text-align: center;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      background: linear-gradient(90deg,#4f46e5,#818cf8,#4f46e5);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shimmer 1.5s infinite;
-    }
-    @keyframes shimmer {
-      0%{background-position:-100% 0;}
-      100%{background-position:100% 0;}
-    }
+    @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+    #processing { display: none; text-align: center; margin-bottom: 0.5rem; color: #4f46e5; font-weight: 500; }
+    textarea { resize: none; overflow-y: hidden; }
   </style>
 </head>
-<body class="h-full text-gray-900">
+<body class="h-full bg-gray-50 text-gray-900">
   <div class="flex flex-col h-screen">
     <!-- Header -->
     <header class="px-4 py-3 border-b bg-white sticky top-0 z-10">
@@ -92,11 +36,12 @@
     <!-- Footer -->
     <footer class="px-3 pb-3">
       <div class="max-w-3xl mx-auto">
-        <div id="processing" class="typing"><span></span><span></span><span></span></div>
+        <div id="processing" class="typing">Flarefix is typing <span></span><span></span><span></span></div>
         <div class="rounded-2xl border bg-white shadow-sm flex items-end">
           <textarea id="input" rows="1" placeholder="Message..." 
             class="flex-1 p-3 outline-none max-h-40 text-sm sm:text-base"></textarea>
-          <button id="send" class="m-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white ripple">
+          <button id="send" 
+            class="m-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base">
             Send
           </button>
         </div>
@@ -130,16 +75,21 @@
       messages.forEach(m => {
         const isUser = m.role === 'user';
         const div = document.createElement('div');
-        div.className = `flex items-start gap-2 ${isUser?'justify-end':''}`;
-        if(isUser){
-          div.innerHTML = `<div class="chat-bubble max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-indigo-600 text-white">
-            <div class="message-content">${renderMarkdown(m.content)}</div>
-          </div>`;
-        }else{
-          div.innerHTML = `<div class="w-7 h-7 rounded-full bg-black text-gray-200 flex items-center justify-center text-xs font-bold">F</div>
-            <div class="chat-bubble max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
-            <div class="message-content">${renderMarkdown(m.content)}</div></div>`;
+        div.className = `flex items-start gap-2 ${isUser ? 'justify-end' : ''}`;
+
+        if (isUser) {
+          div.innerHTML = `
+            <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-indigo-600 text-white">
+              <div class="message-content">${renderMarkdown(m.content)}</div>
+            </div>`;
+        } else {
+          div.innerHTML = `
+            <div class="w-7 h-7 rounded-full bg-black text-gray-200 flex items-center justify-center text-xs font-bold">F</div>
+            <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
+              <div class="message-content">${renderMarkdown(m.content)}</div>
+            </div>`;
         }
+
         threadEl.appendChild(div);
       });
       messagesView.scrollTop = messagesView.scrollHeight;
@@ -147,55 +97,59 @@
 
     async function sendMessage() {
       const text = inputEl.value.trim();
-      if(!text) return;
-      inputEl.value='';
-      sendBtn.disabled=true;
+      if (!text) return;
+      inputEl.value = '';
+      sendBtn.disabled = true;
 
-      // Button ripple effect
-      const ripple = document.createElement('span');
-      const rect = sendBtn.getBoundingClientRect();
-      ripple.style.left = (event.clientX - rect.left) + 'px';
-      ripple.style.top = (event.clientY - rect.top) + 'px';
-      sendBtn.appendChild(ripple);
-      setTimeout(()=>ripple.remove(),600);
-
-      messages.push({role:'user',content:text});
+      messages.push({ role: 'user', content: text });
       render();
-      processingEl.style.display='block';
 
-      try{
-        const payload={message:text,user_id:sessionId};
-        const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data=await res.json();
-        let reply=data.reply||'No response';
+      processingEl.style.display = 'block';
 
-        messages.push({role:'assistant',content:''});
+      try {
+        const payload = { message: text, user_id: sessionId };
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        let reply = data.reply || 'No response';
+
+        messages.push({ role: 'assistant', content: "" });
         render();
-        let current='';
-        for(let i=0;i<reply.length;i++){
-          current+=reply[i];
-          messages[messages.length-1].content=current;
+
+        let current = "";
+        for (let i = 0; i < reply.length; i++) {
+          current += reply[i];
+          messages[messages.length - 1].content = current;
           render();
-          await new Promise(r=>setTimeout(r,1));
+          await new Promise(r => setTimeout(r, 20));
         }
-      }catch(e){
-        messages.push({role:'assistant',content:'Error: '+e.message});
+
+      } catch (e) {
+        messages.push({ role: 'assistant', content: 'Error: ' + e.message });
         render();
       }
-      processingEl.style.display='none';
-      sendBtn.disabled=false;
+
+      processingEl.style.display = 'none';
+      sendBtn.disabled = false;
       inputEl.focus();
     }
 
-    inputEl.addEventListener('keydown',e=>{
-      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { 
+        e.preventDefault(); sendMessage(); 
+      }
     });
-    sendBtn.addEventListener('click',sendMessage);
+    sendBtn.addEventListener('click', sendMessage);
 
-    inputEl.addEventListener('input',()=>{
-      inputEl.style.height='auto';
-      inputEl.style.height=inputEl.scrollHeight+'px';
+    // Auto-expand textarea
+    inputEl.addEventListener("input", () => {
+      inputEl.style.height = "auto";
+      inputEl.style.height = inputEl.scrollHeight + "px";
     });
   </script>
 </body>
