@@ -88,10 +88,23 @@
               <div class="message-content">${renderMarkdown(m.content)}</div>
             </div>`;
         } else {
+          let htmlContent = renderMarkdown(m.content);
+
+          // Wrap code blocks with copy button
+          const contentWithCopy = htmlContent.replace(
+            /<pre><code>([\s\S]*?)<\/code><\/pre>/g,
+            (match, code) => `
+              <div class="relative">
+                <pre class="bg-gray-100 p-3 rounded text-sm overflow-auto"><code>${code}</code></pre>
+                <button class="absolute top-2 right-2 bg-gray-300 hover:bg-gray-400 text-black px-2 py-1 rounded text-xs" onclick="copyCode(this)">Copy</button>
+              </div>
+            `
+          );
+
           div.innerHTML = `
             <div class="w-7 h-7 rounded-full bg-black text-gray-200 flex items-center justify-center text-xs font-bold">F</div>
             <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
-              <div class="message-content">${renderMarkdown(m.content)}</div>
+              <div class="message-content">${contentWithCopy}</div>
             </div>`;
         }
 
@@ -162,6 +175,14 @@
       messages = [];
       render();
     });
+
+    // Copy code function
+    function copyCode(btn) {
+      const code = btn.previousElementSibling.innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = "Copied!";
+      setTimeout(() => btn.innerText = "Copy", 1000);
+    }
   </script>
 </body>
 </html>
