@@ -94,9 +94,7 @@
   <script>
     const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
 
-    const sessionIdKey = 'chatbot_session_id';
-    let sessionId = localStorage.getItem(sessionIdKey) || crypto.randomUUID();
-    localStorage.setItem(sessionIdKey, sessionId);
+    const sessionId = crypto.randomUUID(); // ✅ fresh session every time
 
     const threadEl = document.getElementById('thread');
     const inputEl = document.getElementById('input');
@@ -104,24 +102,33 @@
     const messagesView = document.getElementById('messages');
     const processingEl = document.getElementById('processing');
 
-    let messages = JSON.parse(localStorage.getItem('chatbot_messages') || '[]');
+    let messages = []; // ✅ start fresh, no localStorage
 
-    function save(){ localStorage.setItem('chatbot_messages', JSON.stringify(messages)); }
-
-    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+    function escapeHtml(s){ 
+      return String(s).replace(/[&<>\"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); 
+    }
 
     function render(){
       threadEl.innerHTML = '';
       messages.forEach(m=>{
         const isUser = m.role === 'user';
         const div = document.createElement('div');
-        div.className = `flex ${isUser ? 'justify-end':''}`;
-        div.innerHTML = `
-          <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm ${isUser
-            ? 'bg-gray-800 text-white'
-            : 'bg-white border-gray-200'}">
-            ${escapeHtml(m.content)}
-          </div>`;
+        div.className = `flex items-end gap-2 ${isUser ? 'justify-end':''}`;
+
+        if (isUser) {
+          // User message bubble
+          div.innerHTML = `
+            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-gray-800 text-white">
+              ${escapeHtml(m.content)}
+            </div>`;
+        } else {
+          // Assistant with Flarefix logo
+          div.innerHTML = `
+            <div class="w-7 h-7 rounded-full bg-gray-700 text-white flex items-center justify-center text-xs font-bold">F</div>
+            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
+              ${escapeHtml(m.content)}
+            </div>`;
+        }
         threadEl.appendChild(div);
       });
       messagesView.scrollTop = messagesView.scrollHeight;
@@ -158,7 +165,6 @@
       }
 
       processingEl.style.display = 'none';
-      save();
       render();
       sendBtn.disabled = false;
       inputEl.focus();
