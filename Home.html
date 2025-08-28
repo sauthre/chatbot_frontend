@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Flarefix</title>
+  <title>Flarefix Chat</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     #messages { scroll-behavior: smooth; }
-
-    /* Typing dots */
     .typing span {
       display:inline-block; width:6px; height:6px; margin:0 2px;
       border-radius:9999px; opacity:.3; animation: blink 1.2s infinite;
@@ -16,58 +14,36 @@
     .typing span:nth-child(2){animation-delay:.2s}
     .typing span:nth-child(3){animation-delay:.4s}
     @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
-
-    /* Chat bubble animation */
-    .chat-bubble {
-      animation: fadeInUp 0.3s ease;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Markdown formatting */
-    .message-content p { margin: 0.25rem 0; }
-    .message-content code { background: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 4px; }
-    .dark .message-content code { background: #374151; color: #f9fafb; }
-    .message-content pre {
-      background: #f3f4f6; padding: 0.5rem; border-radius: 6px; overflow-x: auto;
-    }
-    .dark .message-content pre { background: #1f2937; color: #f9fafb; }
+    #processing { display: none; text-align: center; margin-bottom: 0.5rem; color: #4f46e5; font-weight: 500; }
+    textarea { resize: none; overflow-y: hidden; }
   </style>
 </head>
-<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+<body class="h-full bg-gray-50 text-gray-900">
   <div class="flex flex-col h-screen">
-    <!-- HEADER -->
-    <header class="px-4 py-3 border-b bg-white dark:bg-gray-800 sticky top-0 z-10 shadow-md flex justify-between items-center">
-      <div class="max-w-5xl flex items-center gap-3">
-        <div class="w-9 h-9 rounded-2xl bg-gray-800 text-gray-100 grid place-items-center font-bold">F</div>
+    <!-- Header -->
+    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10">
+      <div class="max-w-5xl mx-auto flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-black text-gray-200 grid place-items-center font-bold">F</div>
         <h1 class="text-lg font-semibold">Flarefix</h1>
-      </div>
-      <div class="flex gap-2">
-        <button id="clear" class="px-3 py-1.5 text-sm rounded-lg bg-red-500 hover:bg-red-600 text-white">Clear Chat</button>
-        <button id="toggleTheme" class="px-3 py-1.5 text-sm rounded-lg bg-gray-700 hover:bg-gray-600 text-white">Dark/Light</button>
       </div>
     </header>
 
-    <!-- MAIN CHAT -->
-    <main id="messages" class="flex-1 overflow-y-auto px-4 py-4">
+    <!-- Chat Messages -->
+    <main id="messages" class="flex-1 overflow-y-auto px-3 py-3 h-[calc(100vh-120px)]">
       <div id="thread" class="max-w-3xl mx-auto space-y-4"></div>
     </main>
 
-    <!-- FOOTER INPUT -->
-    <footer class="px-4 pb-4">
+    <!-- Footer -->
+    <footer class="px-3 pb-3">
       <div class="max-w-3xl mx-auto">
-        <div id="processing" class="hidden text-center mb-2 text-gray-600 dark:text-gray-300">
-          <span class="typing"><span></span><span></span><span></span></span>
-        </div>
-        <div class="rounded-2xl border bg-white dark:bg-gray-800 shadow-md transition-all duration-300 hover:shadow-lg">
-          <div class="p-3">
-            <textarea id="input" rows="1" placeholder="Message Flarefix..." class="w-full outline-none max-h-40 bg-transparent resize-none"></textarea>
-          </div>
-          <div class="px-3 pb-3 flex justify-end">
-            <button id="send" class="px-4 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-900 text-white">Send</button>
-          </div>
+        <div id="processing" class="typing">Flarefix is typing <span></span><span></span><span></span></div>
+        <div class="rounded-2xl border bg-white shadow-sm flex items-end">
+          <textarea id="input" rows="1" placeholder="Message..." 
+            class="flex-1 p-3 outline-none max-h-40 text-sm sm:text-base"></textarea>
+          <button id="send" 
+            class="m-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base">
+            Send
+          </button>
         </div>
       </div>
     </footer>
@@ -75,19 +51,16 @@
 
   <script>
     const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
-    const sessionId = crypto.randomUUID(); // fresh session each time
+    const sessionId = crypto.randomUUID();
 
     const threadEl = document.getElementById('thread');
     const inputEl = document.getElementById('input');
     const sendBtn = document.getElementById('send');
     const messagesView = document.getElementById('messages');
     const processingEl = document.getElementById('processing');
-    const clearBtn = document.getElementById('clear');
-    const toggleThemeBtn = document.getElementById('toggleTheme');
 
     let messages = [];
 
-    // Basic markdown renderer
     function renderMarkdown(text) {
       return text
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -106,13 +79,13 @@
 
         if (isUser) {
           div.innerHTML = `
-            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-gray-800 text-white">
+            <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-indigo-600 text-white">
               <div class="message-content">${renderMarkdown(m.content)}</div>
             </div>`;
         } else {
           div.innerHTML = `
-            <div class="w-7 h-7 rounded-full bg-gray-700 text-white flex items-center justify-center text-xs font-bold">F</div>
-            <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm bg-white dark:bg-gray-700 dark:text-gray-100 border-gray-200">
+            <div class="w-7 h-7 rounded-full bg-black text-gray-200 flex items-center justify-center text-xs font-bold">F</div>
+            <div class="max-w-[80%] rounded-2xl px-3 py-2 shadow border text-sm bg-white border-gray-200">
               <div class="message-content">${renderMarkdown(m.content)}</div>
             </div>`;
         }
@@ -127,10 +100,11 @@
       if (!text) return;
       inputEl.value = '';
       sendBtn.disabled = true;
-      processingEl.classList.remove("hidden");
 
       messages.push({ role: 'user', content: text });
       render();
+
+      processingEl.style.display = 'block';
 
       try {
         const payload = { message: text, user_id: sessionId };
@@ -141,33 +115,34 @@
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        // ✅ STREAMING SIMULATION: Instead of waiting, show gradually
         const data = await res.json();
         let reply = data.reply || 'No response';
-        let current = "";
+
         messages.push({ role: 'assistant', content: "" });
         render();
 
+        let current = "";
         for (let i = 0; i < reply.length; i++) {
           current += reply[i];
           messages[messages.length - 1].content = current;
           render();
-          await new Promise(r => setTimeout(r, 15)); // typing speed
+          await new Promise(r => setTimeout(r, 20));
         }
+
       } catch (e) {
         messages.push({ role: 'assistant', content: 'Error: ' + e.message });
+        render();
       }
 
-      processingEl.classList.add("hidden");
-      render();
+      processingEl.style.display = 'none';
       sendBtn.disabled = false;
       inputEl.focus();
     }
 
-    // Events
     inputEl.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+      if (e.key === 'Enter' && !e.shiftKey) { 
+        e.preventDefault(); sendMessage(); 
+      }
     });
     sendBtn.addEventListener('click', sendMessage);
 
@@ -175,17 +150,6 @@
     inputEl.addEventListener("input", () => {
       inputEl.style.height = "auto";
       inputEl.style.height = inputEl.scrollHeight + "px";
-    });
-
-    // Clear chat
-    clearBtn.addEventListener('click', () => {
-      messages = [];
-      render();
-    });
-
-    // Dark/Light mode toggle
-    toggleThemeBtn.addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
     });
   </script>
 </body>
