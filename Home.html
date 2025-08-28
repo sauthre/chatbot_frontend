@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FlareFix</title>
+  <title>Flarefix</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     #messages { scroll-behavior: smooth; }
@@ -28,7 +28,7 @@
 
     /* Input box typing animation */
     #input {
-      overflow-wrap: break-word;   /* ✅ Prevents horizontal scroll */
+      overflow-wrap: break-word;
       word-break: break-word;
       resize: none;
     }
@@ -47,7 +47,7 @@
       display: none;
       text-align: center;
       margin-bottom: 0.5rem;
-      color: #4f46e5;
+      color: #374151;
       font-weight: 500;
       animation: pulse 1.5s infinite;
     }
@@ -59,26 +59,32 @@
 </head>
 <body class="h-full bg-gray-50 text-gray-900">
   <div class="flex flex-col h-screen">
-    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10 shadow-md animate-fade-in">
+    <!-- HEADER -->
+    <header class="px-4 py-3 border-b bg-white sticky top-0 z-10 shadow-md">
       <div class="max-w-5xl mx-auto flex items-center gap-3">
-        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white grid place-items-center font-bold animate-bounce">AI</div>
-        <h1 class="text-lg font-semibold">My Chatbot</h1>
+        <!-- Flarefix logo -->
+        <div class="w-9 h-9 rounded-2xl bg-gray-800 text-gray-100 grid place-items-center font-bold animate-bounce">
+          F
+        </div>
+        <h1 class="text-lg font-semibold text-gray-800">Flarefix</h1>
       </div>
     </header>
 
+    <!-- MAIN CHAT -->
     <main id="messages" class="flex-1 overflow-y-auto px-4 py-4">
       <div id="thread" class="max-w-3xl mx-auto space-y-4"></div>
     </main>
 
+    <!-- FOOTER INPUT -->
     <footer class="px-4 pb-4">
       <div class="max-w-3xl mx-auto">
         <div id="processing">Processing your request...</div>
         <div class="rounded-2xl border bg-white shadow-md transition-all duration-300 hover:shadow-lg">
           <div class="p-3">
-            <textarea id="input" rows="1" placeholder="Message..." class="w-full outline-none max-h-40"></textarea>
+            <textarea id="input" rows="1" placeholder="Message Flarefix..." class="w-full outline-none max-h-40"></textarea>
           </div>
           <div class="px-3 pb-3 flex justify-end">
-            <button id="send" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">Send</button>
+            <button id="send" class="px-4 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-900 text-white">Send</button>
           </div>
         </div>
       </div>
@@ -86,7 +92,6 @@
   </div>
 
   <script>
-    // ✅ Set to your Render backend URL
     const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
 
     const sessionIdKey = 'chatbot_session_id';
@@ -113,7 +118,7 @@
         div.className = `flex ${isUser ? 'justify-end':''}`;
         div.innerHTML = `
           <div class="chat-bubble max-w-[75%] rounded-2xl px-3 py-2 shadow border text-sm ${isUser
-            ? 'bg-indigo-600 text-white'
+            ? 'bg-gray-800 text-white'
             : 'bg-white border-gray-200'}">
             ${escapeHtml(m.content)}
           </div>`;
