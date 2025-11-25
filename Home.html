@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flarefix Chat</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     #messages { scroll-behavior: smooth; }
     .typing span {
@@ -18,18 +19,32 @@
     textarea { resize: none; overflow-y: hidden; }
   </style>
 </head>
-<script>
-  const drawer = document.getElementById("drawer");
-  const drawerBtn = document.getElementById("drawerBtn");
-  let drawerOpen = false;
 
-  drawerBtn.addEventListener("click", () => {
-    drawerOpen = !drawerOpen;
-    drawer.style.transform = drawerOpen ? "translateX(0)" : "translateX(-100%)";
-  });
-</script>
 <body class="h-full bg-gray-50 text-gray-900">
+  
+  <!-- 🔥 Drawer Button (fixed) -->
+  <button id="drawerBtn" class="fixed top-4 left-4 z-[200] bg-black text-white px-3 py-2 rounded-lg shadow">
+    ☰
+  </button>
+
+  <!-- 🔥 Drawer Panel -->
+  <div id="drawer"
+    class="fixed top-0 left-0 h-full w-64 bg-white shadow-xl transform -translate-x-full transition-transform duration-300 z-[150]">
+
+    <div class="p-4 border-b">
+      <h2 class="text-lg font-semibold">Flarefix Menu</h2>
+    </div>
+
+    <ul class="p-4 space-y-4 text-gray-700 text-base">
+      <li><a href="home.html" class="hover:text-black">🏠 New Chat</a></li>
+      <li><a href="secret-chat.html" class="hover:text-black">🔒 Secret Chat</a></li>
+      <li><button onclick="alert('Settings coming soon')" class="w-full text-left hover:text-black">⚙️ Settings</button></li>
+      <li><button onclick="alert('Flarefix - Simple & Fast Chat')" class="w-full text-left hover:text-black">ℹ️ About</button></li>
+    </ul>
+  </div>
+
   <div class="flex flex-col h-screen">
+
     <!-- Header -->
     <header class="px-4 py-3 border-b bg-white sticky top-0 z-10">
       <div class="max-w-5xl mx-auto flex items-center gap-3">
@@ -46,18 +61,21 @@
     <!-- Footer -->
     <footer class="px-3 pb-6">
       <div class="max-w-3xl mx-auto">
-        <div id="processing" class="typing text-center mb-2">Flarefix is typing <span></span><span></span><span></span></div>
-        
-        <!-- Input container (centered initially) -->
+        <div id="processing" class="typing text-center mb-2">
+          Flarefix is typing <span></span><span></span><span></span>
+        </div>
+
         <div id="input-container" class="flex justify-center h-[80vh] items-center transition-all duration-500">
           <div class="w-full sm:w-[90%] md:w-[80%] lg:w-[70%] rounded-2xl border bg-white shadow-sm flex items-end gap-2 px-2">
             <textarea id="input" rows="1" placeholder="Message..."
               class="flex-1 p-3 outline-none max-h-40 text-sm sm:text-base"></textarea>
-            <button id="send" 
+
+            <button id="send"
               class="m-2 px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-white text-sm sm:text-base">
               Send
             </button>
-            <button id="clear" 
+
+            <button id="clear"
               class="m-2 px-4 py-2 rounded-xl bg-gray-300 hover:bg-gray-400 text-black text-sm sm:text-base">
               Clear
             </button>
@@ -67,6 +85,19 @@
     </footer>
   </div>
 
+  <!-- 🔥 Drawer JavaScript FIXED (moved here so elements exist) -->
+  <script>
+    const drawer = document.getElementById("drawer");
+    const drawerBtn = document.getElementById("drawerBtn");
+    let drawerOpen = false;
+
+    drawerBtn.addEventListener("click", () => {
+      drawerOpen = !drawerOpen;
+      drawer.style.transform = drawerOpen ? "translateX(0)" : "translateX(-100%)";
+    });
+  </script>
+
+  <!-- 🔥 Chat JS (unchanged except order fix) -->
   <script>
     const API_URL = "https://chatbot-backend-hrvb.onrender.com/chat";
     const sessionId = crypto.randomUUID();
@@ -122,7 +153,6 @@
       inputEl.value = '';
       sendBtn.disabled = true;
 
-      // After first send, move input box to bottom
       if (!firstMessageSent) {
         firstMessageSent = true;
         inputContainer.classList.remove("h-[80vh]", "items-center");
@@ -134,16 +164,14 @@
       processingEl.style.display = 'block';
 
       try {
-        const payload = { message: text, user_id: sessionId };
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ message: text, user_id: sessionId })
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        let reply = data.reply || 'No response';
+        let reply = data.reply;
 
         messages.push({ role: 'assistant', content: "" });
         render();
@@ -167,19 +195,19 @@
     }
 
     inputEl.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); sendMessage(); 
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
       }
     });
+
     sendBtn.addEventListener('click', sendMessage);
 
-    // Auto-expand textarea
     inputEl.addEventListener("input", () => {
       inputEl.style.height = "auto";
       inputEl.style.height = inputEl.scrollHeight + "px";
     });
 
-    // Clear chat button
     clearBtn.addEventListener('click', () => {
       messages = [];
       render();
@@ -188,24 +216,7 @@
       inputContainer.classList.remove("sticky", "bottom-0", "pb-4");
     });
   </script>
+
 </body>
-<!-- Drawer + Button -->
-<button id="drawerBtn" class="fixed top-4 left-4 z-50 bg-black text-white px-3 py-2 rounded-lg shadow">
-  ☰
-</button>
-
-<div id="drawer"
-  class="fixed top-0 left-0 h-full w-64 bg-white shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
-
-  <div class="p-4 border-b">
-    <h2 class="text-lg font-semibold">Flarefix Menu</h2>
-  </div>
-
-  <ul class="p-4 space-y-4 text-gray-700 text-base">
-    <li><a href="home.html" class="hover:text-black">🏠 New Chat</a></li>
-    <li><a href="secret-chat.html" class="hover:text-black">🔒 Secret Chat</a></li>
-    <li><button onclick="alert('Settings coming soon')" class="w-full text-left hover:text-black">⚙️ Settings</button></li>
-    <li><button onclick="alert('Flarefix - Simple & Fast Chat')" class="w-full text-left hover:text-black">ℹ️ About</button></li>
-  </ul>
-</div>
 </html>
+
