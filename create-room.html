@@ -1,0 +1,81 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Create Flarefix Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center">
+
+  <div class="bg-white p-6 rounded-xl shadow-lg w-80">
+    <h1 class="text-lg font-semibold mb-4">Create Secret Room</h1>
+
+    <input id="room_id" class="w-full border px-3 py-2 rounded mb-3"
+           placeholder="Room ID (example: family123)" />
+
+    <input id="username" class="w-full border px-3 py-2 rounded mb-3"
+           placeholder="Your display name (example: Atul)" />
+
+    <input id="passcode" class="w-full border px-3 py-2 rounded mb-3"
+           placeholder="Passcode (example: 9090)" />
+
+    <button id="createBtn"
+            class="w-full bg-black text-white py-2 rounded-lg">
+      Create Room
+    </button>
+
+    <p id="status" class="text-sm text-red-600 mt-3"></p>
+  </div>
+
+<script>
+const statusEl = document.getElementById('status');
+document.getElementById("createBtn").addEventListener("click", async () => {
+  statusEl.textContent = "";
+  const room_id = document.getElementById("room_id").value.trim();
+  const passcode = document.getElementById("passcode").value.trim();
+  const username = document.getElementById("username").value.trim();
+
+  if (!room_id || !passcode || !username) {
+    statusEl.textContent = "Room ID, passcode and display name are required";
+    return;
+  }
+
+  try {
+    // check existing
+    const { data: existing, error: checkError } = await window.db
+      .from('rooms')
+      .select('room_id')
+      .eq('room_id', room_id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (existing) {
+      statusEl.textContent = "Room already exists. Choose different ID or join the room.";
+      return;
+    }
+
+    // create
+    const { error: insertError } = await window.db
+      .from('rooms')
+      .insert([{ room_id, passcode, created_at: new Date().toISOString() }]);
+
+    if (insertError) throw insertError;
+
+    // redirect passing username
+    const url = `secret_chat.html?room=${encodeURIComponent(room_id)}&user=${encodeURIComponent(username)}`;
+    window.location.href = url;
+
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Error creating room: " + (err.message || err.toString());
+  }
+});
+</script>
+
+</body>
+</html>

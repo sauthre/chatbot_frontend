@@ -1,0 +1,65 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Join Flarefix Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center">
+
+  <div class="bg-white p-6 rounded-xl shadow-lg w-80">
+    <h1 class="text-lg font-semibold mb-4">Join Secret Room</h1>
+
+    <input id="room_id" class="w-full border px-3 py-2 rounded mb-3" placeholder="Room ID" />
+
+    <input id="username" class="w-full border px-3 py-2 rounded mb-3" placeholder="Your display name" />
+
+    <input id="passcode" class="w-full border px-3 py-2 rounded mb-3" placeholder="Passcode" />
+
+    <button id="joinBtn" class="w-full bg-black text-white py-2 rounded-lg">Join Room</button>
+
+    <p id="status" class="text-sm text-red-600 mt-3"></p>
+  </div>
+
+<script>
+const statusEl = document.getElementById('status');
+document.getElementById("joinBtn").addEventListener("click", async () => {
+  statusEl.textContent = "";
+  const room_id = document.getElementById("room_id").value.trim();
+  const passcode = document.getElementById("passcode").value.trim();
+  const username = document.getElementById("username").value.trim();
+
+  if (!room_id || !passcode || !username) {
+    statusEl.textContent = "All fields are required.";
+    return;
+  }
+
+  try {
+    const { data, error } = await window.db
+      .from('rooms')
+      .select('*')
+      .eq('room_id', room_id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data || data.passcode !== passcode) {
+      statusEl.textContent = "Invalid Room ID or Passcode!";
+      return;
+    }
+
+    // valid -> pass username in URL
+    window.location.href = `secret_chat.html?room=${encodeURIComponent(room_id)}&user=${encodeURIComponent(username)}`;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Error joining room: " + (err.message || err.toString());
+  }
+});
+</script>
+
+</body>
+</html>
